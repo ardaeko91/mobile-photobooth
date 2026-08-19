@@ -2,16 +2,33 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { google } from 'googleapis';
 
+// Fungsi penarik Folder ID murni dari URL atau ID mentah
+function extractDriveFolderId(input) {
+  if (!input) return null;
+  
+  // Jika input berupa URL (misal: https://drive.google.com/drive/folders/1VePHQog... atau dengan ?usp=...)
+  const match = input.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+  if (match && match[1]) {
+    return match[1];
+  }
+  
+  // Jika input sudah berupa ID murni tanpa URL (tanpa slash / atau http)
+  if (!input.includes('/') && !input.includes('http')) {
+    return input.trim();
+  }
+  
+  return null;
+}
+
 export async function POST(request) {
   try {
     const formData = await request.formData();
     const file = formData.get('file');
-    const tenantId = formData.get('tenantId');
     const eventSlug = formData.get('eventSlug') || 'general';
 
-    if (!file || !tenantId) {
+    if (!file) {
       return NextResponse.json(
-        { error: 'File dan tenantId wajib diisi.' },
+        { error: 'File foto wajib diunggah.' },
         { status: 400 }
       );
     }
@@ -21,66 +38,64 @@ export async function POST(request) {
       process.env.SUPABASE_SERVICE_ROLE_KEY || ''
     );
 
-    const { data: tenant, error: tenantError } = await supabaseAdmin
-      .from('tenants')
-      .select('google_refresh_token')
-      .eq('id', tenantId)
-      .single();
+    // 1. Ambil data Event berdasarkan Slug
+    const { data: eventData, error: eventError } = await supabaseAdmin
+      .from('events')
+      .select('*')
+      .eq('slug', eventSlug)
+      .maybeSingle();
 
-    if (tenantError || !tenant?.google_refresh_token) {
+    if (eventError) {
+      console.error('Supabase Query Error:', eventError);
       return NextResponse.json(
-        { error: 'Tenant tidak ditemukan atau OAuth Google Drive belum terhubung.' },
+        { error: `Database Error: ${eventError.message}` },
+        { status: 500 }
+      );
+    }
+
+    if (!eventData) {
+      return NextResponse.json(
+        { error: `Event dengan slug '${eventSlug}' tidak ditemukan di database.` },
         { status: 404 }
       );
     }
 
+    // Ekstrak ID Folder murni dari URL yang ada di database
+    const rawFolderValue = eventData.drive_folder_id || eventData.drive_folder_url || null;
+    const cleanFolderId = extractDriveFolderId(rawFolderValue);
+
+    // 2. Inisialisasi Google OAuth2 Client
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET
     );
 
-    oauth2Client.setCredentials({
-      refresh_token: tenant.google_refresh_token,
-    });
-
-    const drive = google.drive({ version: 'v3', auth: oauth2Client });
-
-    // --- LOGIKA DYNAMIC FOLDER ALLOCATION ---
-    const folderName = `Photobooth - ${eventSlug}`;
-    let targetFolderId = null;
-
-    // 1. Cari folder berdasarkan nama
-    const searchFolder = await drive.files.list({
-      q: `name = '${folderName.replace(/'/g, "\\'")}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
-      fields: 'files(id, name)',
-      spaces: 'drive',
-    });
-
-    if (searchFolder.data.files && searchFolder.data.files.length > 0) {
-      targetFolderId = searchFolder.data.files[0].id;
-    } else {
-      // 2. Buat folder baru jika belum ada
-      const newFolder = await drive.files.create({
-        requestBody: {
-          name: folderName,
-          mimeType: 'application/vnd.google-apps.folder',
-        },
-        fields: 'id',
-      });
-      targetFolderId = newFolder.data.id;
+    const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
+    if (!refreshToken) {
+      return NextResponse.json(
+        { error: 'GOOGLE_REFRESH_TOKEN belum terpasang di .env.local.' },
+        { status: 500 }
+      );
     }
 
-    // --- UPLOAD FILE KE DALAM FOLDER ---
+    oauth2Client.setCredentials({ refresh_token: refreshToken });
+    const drive = google.drive({ version: 'v3', auth: oauth2Client });
+
+    // 3. Konversi file gambar ke Stream
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     const { Readable } = await import('stream');
     const stream = Readable.from(buffer);
 
+    // 4. Tentukan target folder jika ID murni berhasil diekstrak
+    const targetFolder = cleanFolderId ? [cleanFolderId] : [];
+
+    // 5. Upload File ke Google Drive
     const driveResponse = await drive.files.create({
       requestBody: {
-        name: file.name,
+        name: file.name || `photo-${Date.now()}.jpg`,
         mimeType: file.type || 'image/jpeg',
-        parents: targetFolderId ? [targetFolderId] : [],
+        parents: targetFolder,
       },
       media: {
         mimeType: file.type || 'image/jpeg',
@@ -89,24 +104,15 @@ export async function POST(request) {
       fields: 'id, webViewLink',
     });
 
-    // --- SIMPAN METADATA KE SUPABASE (Tabel photos) ---
-    const { data: eventData } = await supabaseAdmin
-      .from('events')
-      .select('id')
-      .eq('slug', eventSlug)
-      .single();
+    // 6. Simpan Metadata Foto ke Tabel `photos` Supabase
+    await supabaseAdmin.from('photos').insert([
+      {
+        event_id: eventData.id,
+        drive_file_id: driveResponse.data.id,
+        drive_url: driveResponse.data.webViewLink,
+      },
+    ]);
 
-    if (eventData) {
-      await supabaseAdmin.from('photos').insert([
-        {
-          event_id: eventData.id,
-          drive_file_id: driveResponse.data.id,
-          drive_url: driveResponse.data.webViewLink,
-        },
-      ]);
-    }
-
-    // --- RESPONSE DIBERIKAN PALING AKHIR ---
     return NextResponse.json({
       success: true,
       fileId: driveResponse.data.id,

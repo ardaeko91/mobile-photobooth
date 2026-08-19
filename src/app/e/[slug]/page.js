@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useRef, useEffect, use } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useParams } from 'next/navigation';
+import { createClient } from '@/lib/supabaseClient';
 
-export default function PhotoboothPage({ params }) {
-  const unwrappedParams = use(params);
-  const eventSlug = unwrappedParams.eventSlug;
-  const tenantId = '00000000-0000-0000-0000-000000000000';
+export default function PhotoboothPage() {
+  const params = useParams();
+  const eventSlug = params?.slug;
+  const supabase = createClient();
 
   const [step, setStep] = useState('CAPTURE');
   const [photos, setPhotos] = useState([null, null, null]);
@@ -20,16 +22,21 @@ export default function PhotoboothPage({ params }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
-    fetchEventDetails();
+    if (eventSlug) {
+      fetchEventDetails();
+    }
   }, [eventSlug]);
 
   const fetchEventDetails = async () => {
     try {
-      const res = await fetch(`/api/events?tenantId=${tenantId}`);
-      const data = await res.json();
-      if (data.success && data.events) {
-        const found = data.events.find((e) => e.slug === eventSlug);
-        if (found) setEventData(found);
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('slug', eventSlug)
+        .maybeSingle();
+
+      if (!error && data) {
+        setEventData(data);
       }
     } catch (err) {
       console.error('Error fetching event details:', err);
@@ -85,7 +92,8 @@ export default function PhotoboothPage({ params }) {
   };
 
   useEffect(() => {
-    if (!loadingEvent && eventData && eventData.is_active !== false && step === 'CAPTURE') {
+    const isOnline = eventData?.status === 'online' || eventData?.is_active !== false;
+    if (!loadingEvent && eventData && isOnline && step === 'CAPTURE') {
       navigator.mediaDevices
         .getUserMedia({ video: { facingMode: 'user', width: 1280, height: 720 }, audio: false })
         .then((stream) => {
@@ -164,7 +172,7 @@ export default function PhotoboothPage({ params }) {
         ctx.fillStyle = '#0F172A';
         ctx.font = 'bold 38px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(eventSlug.replace('-', ' ').toUpperCase(), width / 2, 110);
+        ctx.fillText((eventSlug || '').replace('-', ' ').toUpperCase(), width / 2, 110);
 
         const now = new Date();
         const dateStr = now.toLocaleDateString('id-ID', {
@@ -277,8 +285,8 @@ export default function PhotoboothPage({ params }) {
 
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('tenantId', tenantId);
       formData.append('eventSlug', eventSlug);
+      if (eventData?.user_id) formData.append('tenantId', eventData.user_id);
 
       const res = await fetch('/api/upload', { method: 'POST', body: formData });
       const text = await res.text();
@@ -312,8 +320,9 @@ export default function PhotoboothPage({ params }) {
     );
   }
 
-  // LOKASI PENCEGATAN EVENT OFFLINE
-  if (eventData && eventData.is_active === false) {
+  const isOffline = eventData?.status === 'offline' || eventData?.is_active === false;
+
+  if (eventData && isOffline) {
     return (
       <main className="h-[100dvh] w-full bg-slate-100 flex items-center justify-center p-4 text-center font-sans">
         <div className="bg-white p-6 rounded-3xl shadow-xl max-w-xs space-y-3 border border-slate-200">
@@ -337,7 +346,7 @@ export default function PhotoboothPage({ params }) {
 
       <header className="text-center py-1 flex-shrink-0">
         <h1 className="text-base font-extrabold tracking-tight text-slate-900 uppercase">
-          {eventSlug.replace('-', ' ')}
+          {eventData?.name || (eventSlug || '').replace('-', ' ')}
         </h1>
         <p className="text-[10px] text-slate-500">Live Mobile Photobooth</p>
       </header>
