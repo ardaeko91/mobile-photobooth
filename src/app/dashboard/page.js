@@ -494,16 +494,86 @@ export default function DashboardPage() {
               <img src={activeQrUrl.qr} alt="QR Code" className="w-full h-full object-contain" />
             </div>
 
-            {/* --- PENAMBAHAN PESAN EDUKASI DI SINI --- */}
+            {/* Pesan Edukasi */}
             <p className="text-[11px] text-amber-700 bg-amber-50 p-2.5 rounded-xl border border-amber-200/80 font-medium leading-relaxed">
               💡 Disarankan scan menggunakan <b>Google Lens</b> atau <b>Google Chrome</b> di HP agar bisa langsung berfoto tanpa login.
             </p>
 
             <p className="text-[10px] text-slate-400 break-all">{activeQrUrl.url}</p>
 
+            {/* Tombol Download Poster QR Siap Cetak */}
+            <button
+              onClick={() => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = 600;
+                canvas.height = 800;
+
+                // 1. Background Putih
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // 2. Judul Event (Atas)
+                ctx.fillStyle = '#4F46E5';
+                ctx.font = 'bold 32px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(activeQrUrl.title || 'Photobooth Event', canvas.width / 2, 80);
+
+                // 3. Render Gambar QR Code (Tengah)
+                const qrImg = new Image();
+                qrImg.crossOrigin = 'anonymous';
+                qrImg.src = activeQrUrl.qr;
+                qrImg.onload = () => {
+                  ctx.drawImage(qrImg, 100, 130, 400, 400);
+
+                  // 4. Background Kotak Edukasi (Bawah)
+                  ctx.fillStyle = '#FFFBEB';
+                  ctx.strokeStyle = '#FDE68A';
+                  ctx.lineWidth = 3;
+                  
+                  // Draw Rounded Rectangle Manual
+                  const x = 50, y = 570, w = 500, h = 160, r = 20;
+                  ctx.beginPath();
+                  ctx.moveTo(x + r, y);
+                  ctx.lineTo(x + w - r, y);
+                  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+                  ctx.lineTo(x + w, y + h - r);
+                  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+                  ctx.lineTo(x + r, y + h);
+                  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+                  ctx.lineTo(x, y + r);
+                  ctx.quadraticCurveTo(x, y, x + r, y);
+                  ctx.closePath();
+                  ctx.fill();
+                  ctx.stroke();
+
+                  // 5. Teks Edukasi dalam Kotak
+                  ctx.fillStyle = '#B45309';
+                  ctx.font = 'bold 20px sans-serif';
+                  ctx.fillText('💡 Disarankan scan menggunakan', canvas.width / 2, 620);
+                  
+                  ctx.fillStyle = '#92400E';
+                  ctx.font = 'bold 22px sans-serif';
+                  ctx.fillText('Google Lens atau Google Chrome', canvas.width / 2, 660);
+
+                  ctx.font = '20px sans-serif';
+                  ctx.fillText('di HP agar bisa langsung berfoto tanpa login.', canvas.width / 2, 700);
+
+                  // 6. Trigger Download File
+                  const link = document.createElement('a');
+                  link.download = `QR_${activeQrUrl.title.replace(/\s+/g, '_')}.jpg`;
+                  link.href = canvas.toDataURL('image/jpeg', 0.95);
+                  link.click();
+                };
+              }}
+              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center gap-2"
+            >
+              <span>📥</span> Download QR Siap Cetak
+            </button>
+
             <button
               onClick={() => setActiveQrUrl(null)}
-              className="w-full py-2.5 bg-slate-900 text-white font-bold text-xs rounded-xl hover:bg-slate-800 transition"
+              className="w-full py-2 bg-slate-100 text-slate-600 font-bold text-xs rounded-xl hover:bg-slate-200 transition"
             >
               Tutup
             </button>
