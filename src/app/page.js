@@ -7,31 +7,30 @@ export default function HomePage() {
       {/* Background Accent Glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/20 blur-[120px] rounded-full pointer-events-none" />
 
-      {/* Spacer Atas untuk Keseimbangan Layout */}
+      {/* Spacer Atas */}
       <div className="w-full" />
 
-      {/* Content utama di tengah */}
-      <div className="max-w-md w-full space-y-8 text-center z-10 my-auto">
+      {/* Content Utama di Tengah */}
+      <div className="flex flex-col items-center text-center z-10 my-auto">
         
         {/* Header Judul & Sub-judul */}
-        <div className="space-y-3">
+        <div className="space-y-3 mb-8">
           <h1 className="text-5xl md:text-6xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400">
             Welcome
           </h1>
-          <p className="text-xs md:text-sm font-semibold tracking-wider text-slate-400 uppercase">
+          <p className="text-[11px] md:text-xs font-semibold tracking-widest text-slate-400 uppercase">
             Phone Photobooth v2.1
           </p>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex flex-col gap-3.5 pt-4">
+        {/* Action Buttons (Lebar disesuaikan dengan teks Welcome) */}
+        <div className="w-full max-w-[280px] flex flex-col gap-3">
           
-          {/* Tombol Login dengan Logo Modern */}
+          {/* Tombol Login */}
           <Link
             href="/login"
-            className="w-full py-3.5 px-6 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-2xl shadow-xl shadow-indigo-600/30 border border-indigo-400/30 flex items-center justify-center gap-2.5 transition-all duration-200 active:scale-95 group"
+            className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-2xl shadow-xl shadow-indigo-600/30 border border-indigo-400/30 flex items-center justify-center gap-2 transition-all duration-200 active:scale-95 group"
           >
-            {/* Logo Kamera Modern SVG */}
             <svg
               className="w-4 h-4 text-indigo-200 group-hover:scale-110 transition-transform"
               fill="none"
@@ -57,7 +56,7 @@ export default function HomePage() {
           {/* Tombol Register */}
           <Link
             href="/register"
-            className="w-full py-3.5 px-6 bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 hover:text-white font-bold text-xs rounded-2xl border border-slate-700/80 backdrop-blur-md transition-all duration-200 active:scale-95"
+            className="w-full py-3 px-4 bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 hover:text-white font-bold text-xs rounded-2xl border border-slate-700/80 backdrop-blur-md transition-all duration-200 active:scale-95"
           >
             Daftar Akun Tenant Baru
           </Link>
@@ -73,7 +72,7 @@ export default function HomePage() {
           rel="noopener noreferrer"
           className="text-[11px] font-medium text-slate-500 hover:text-indigo-400 transition-colors duration-200 tracking-wide"
         >
-          Phone Photobooth v2.1 | developed by <span className="font-bold underline decoration-indigo-500/50">@ardaeko</span>[cite: 8]
+          Phone Photobooth v2.1 | developed by <span className="font-bold underline decoration-indigo-500/50">@ardaeko</span>
         </a>
       </footer>
 
