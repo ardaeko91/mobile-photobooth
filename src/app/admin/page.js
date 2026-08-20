@@ -45,6 +45,27 @@ export default function AdminPage() {
     }
   };
 
+  const handleDeleteTenant = async (userId, userEmail) => {
+    const confirmDelete = confirm(`Yakin ingin menghapus tenant ${userEmail}? Data ini akan dihapus permanen.`);
+    if (!confirmDelete) return;
+
+    try {
+      const res = await fetch('/api/admin/delete-tenant', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+
+      alert('Tenant berhasil dihapus!');
+      fetchTenants();
+    } catch (err) {
+      alert('Gagal menghapus: ' + err.message);
+    }
+  };
+
   const handleActivate = async () => {
     if (!selectedTenant) return;
 
@@ -280,6 +301,17 @@ export default function AdminPage() {
                                   Suspend
                                 </button>
                               )}
+
+                              {tenant.role !== 'super_admin' && (
+                              <button
+                                onClick={() => handleDeleteTenant(tenant.id, tenant.email)}
+                                className="px-2.5 py-1 bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/30 font-bold text-[11px] rounded-lg transition ml-2"
+                              >
+                                Hapus
+                              </button>
+                            )}
+
+
                             </div>
                           ) : (
                             <span className="text-[10px] text-slate-500 italic">Owner</span>
