@@ -30,9 +30,9 @@ export default function LoginPage() {
 
       const user = authData.user;
 
-      // 2. Jika Superadmin (by email atau metadata), LANGSUNG BISA MASUK
+     // 2. Jika Superadmin -> Otomatis masuk ke Panel Super Admin (/admin)
       if (user.email === 'ardaeko91@gmail.com' || user?.user_metadata?.role === 'superadmin') {
-        router.push('/dashboard');
+        router.push('/admin');
         router.refresh();
         return;
       }
