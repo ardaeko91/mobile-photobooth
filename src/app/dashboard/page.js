@@ -494,6 +494,11 @@ export default function DashboardPage() {
               <img src={activeQrUrl.qr} alt="QR Code" className="w-full h-full object-contain" />
             </div>
 
+            {/* --- PENAMBAHAN PESAN EDUKASI DI SINI --- */}
+            <p className="text-[11px] text-amber-700 bg-amber-50 p-2.5 rounded-xl border border-amber-200/80 font-medium leading-relaxed">
+              💡 Disarankan scan menggunakan <b>Google Lens</b> atau <b>Google Chrome</b> di HP agar bisa langsung berfoto tanpa login.
+            </p>
+
             <p className="text-[10px] text-slate-400 break-all">{activeQrUrl.url}</p>
 
             <button
