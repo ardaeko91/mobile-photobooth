@@ -10,17 +10,28 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
+  const [isPending, setIsPending] = useState(false);
 
   const router = useRouter();
   const supabase = createClient();
+
+  // Format Link WhatsApp
+  const waNumber = '6289637879506';
+  const waMessage = encodeURIComponent(
+    `Halo Admin, saya mencoba login tetapi akun saya belum diverifikasi.\n\n` +
+    `*Email:* ${email}\n\n` +
+    `Mohon bantuannya untuk verifikasi akun saya. Terima kasih!`
+  );
+  const waLink = `https://wa.me/${waNumber}?text=${waMessage}`;
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setErrorMsg(null);
+    setIsPending(false);
 
     try {
-      // 1. Coba Auth Login
+      // 1. Auth Login Supabase
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -30,49 +41,40 @@ export default function LoginPage() {
 
       const user = authData.user;
 
-     // 2. Jika Superadmin -> Otomatis masuk ke Panel Super Admin (/admin)
+      // 2. Jika Superadmin -> Langsung ke /admin
       if (user.email === 'ardaeko91@gmail.com' || user?.user_metadata?.role === 'superadmin') {
         router.push('/admin');
         router.refresh();
         return;
       }
 
-      // 3. Cek Status Verifikasi di Tabel PROFILES
+      // 3. Cek Status Verifikasi di Tabel Profiles
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('status, subscription_end')
+        .select('status, role')
         .eq('id', user.id)
-        .maybeSingle();
+        .single();
 
       if (profileError) throw profileError;
 
-      // Cek apakah status aktif (bisa 'active' atau 'AKTIF')
-      const isActive = profile?.status === 'active' || profile?.status === 'AKTIF';
-
-      // Cek apakah masa sewa masih berlaku
-      const isExpired = profile?.subscription_end && new Date(profile.subscription_end) < new Date();
-
-      if (!profile || !isActive || isExpired) {
-        await supabase.auth.signOut();
-        if (isExpired) {
-          throw new Error('Masa sewa/langganan Anda telah habis. Silakan hubungi Superadmin.');
-        } else {
-          throw new Error('Akun Anda belum diverifikasi oleh Superadmin.');
-        }
+      // Jika Status Pending / Belum Diverifikasi
+      if (profile?.status !== 'active') {
+        setIsPending(true);
+        throw new Error('Akun Anda belum diverifikasi oleh Superadmin.');
       }
 
-      // 4. Lolos Verifikasi -> Ke Dashboard
+      // 4. Jika Aktif -> Masuk ke Dashboard Tenant
       router.push('/dashboard');
       router.refresh();
     } catch (err) {
-      setErrorMsg(err.message);
+      setErrorMsg(err.message || 'Gagal masuk. Periksa email dan password Anda.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans text-slate-800">
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 font-sans text-slate-800">
       <div className="bg-white p-6 md:p-8 rounded-3xl shadow-xl border border-slate-200 max-w-sm w-full space-y-5">
         <div className="text-center space-y-1">
           <h1 className="text-xl font-bold text-slate-900">Masuk ke Dashboard</h1>
@@ -80,8 +82,20 @@ export default function LoginPage() {
         </div>
 
         {errorMsg && (
-          <div className="bg-red-50 text-red-600 text-xs p-3 rounded-xl border border-red-100 font-semibold">
-            {errorMsg}
+          <div className="bg-red-50 text-red-600 text-xs p-3 rounded-xl border border-red-100 font-semibold space-y-2">
+            <p>{errorMsg}</p>
+            
+            {/* Tombol WA otomatis muncul jika status akun belum diverifikasi */}
+            {isPending && (
+              <a
+                href={waLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-2 px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] rounded-lg shadow-md flex items-center justify-center gap-1.5 transition text-center mt-2"
+              >
+                <span>💬</span> Hubungi Superadmin via WhatsApp
+              </a>
+            )}
           </div>
         )}
 
