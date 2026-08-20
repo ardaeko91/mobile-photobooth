@@ -302,16 +302,12 @@ export default function AdminPage() {
                                 </button>
                               )}
 
-                              {tenant.role !== 'super_admin' && (
                               <button
-                                onClick={() => handleDeleteTenant(tenant.id, tenant.email)}
-                                className="px-2.5 py-1 bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/30 font-bold text-[11px] rounded-lg transition ml-2"
+                                onClick={() => handleDeleteTenant(t.id, t.email)}
+                                className="px-2.5 py-1.5 bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/30 font-bold text-[10px] rounded-xl transition"
                               >
                                 Hapus
                               </button>
-                            )}
-
-
                             </div>
                           ) : (
                             <span className="text-[10px] text-slate-500 italic">Owner</span>

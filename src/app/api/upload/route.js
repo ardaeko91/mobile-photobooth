@@ -70,10 +70,17 @@ export async function POST(request) {
       process.env.GOOGLE_CLIENT_SECRET
     );
 
-    const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
+    // Ganti pengecekan token dengan kode yang lebih informatif ini:
+    // Ambil token dari environment
+    const refreshToken = process.env.GOOGLE_REFRESH_TOKEN || process.env.NEXT_PUBLIC_GOOGLE_REFRESH_TOKEN;
+
     if (!refreshToken) {
+      console.error("Error: GOOGLE_REFRESH_TOKEN tidak ditemukan di process.env");
       return NextResponse.json(
-        { error: 'GOOGLE_REFRESH_TOKEN belum terpasang di .env.local.' },
+        { 
+          success: false, 
+          error: 'GOOGLE_REFRESH_TOKEN belum terpasang di Vercel Environment Variables.' 
+        },
         { status: 500 }
       );
     }
