@@ -24,7 +24,7 @@ export async function POST(request) {
   try {
     const formData = await request.formData();
     const file = formData.get('file');
-    const eventSlug = formData.get('eventSlug') || 'general';
+    const slug = formData.get('slug') || formData.get('eventSlug');
 
     if (!file) {
       return NextResponse.json(
@@ -42,7 +42,7 @@ export async function POST(request) {
     const { data: eventData, error: eventError } = await supabaseAdmin
       .from('events')
       .select('*')
-      .eq('slug', eventSlug)
+      .eq('slug', slug)
       .maybeSingle();
 
     if (eventError) {

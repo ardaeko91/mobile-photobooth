@@ -20,13 +20,48 @@ export default function LoginPage() {
     setErrorMsg(null);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      // 1. Coba Auth Login
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
+      if (authError) throw authError;
 
+      const user = authData.user;
+
+      // 2. Jika Superadmin (by email atau metadata), LANGSUNG BISA MASUK
+      if (user.email === 'ardaeko91@gmail.com' || user?.user_metadata?.role === 'superadmin') {
+        router.push('/dashboard');
+        router.refresh();
+        return;
+      }
+
+      // 3. Cek Status Verifikasi di Tabel PROFILES
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('status, subscription_end')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profileError) throw profileError;
+
+      // Cek apakah status aktif (bisa 'active' atau 'AKTIF')
+      const isActive = profile?.status === 'active' || profile?.status === 'AKTIF';
+
+      // Cek apakah masa sewa masih berlaku
+      const isExpired = profile?.subscription_end && new Date(profile.subscription_end) < new Date();
+
+      if (!profile || !isActive || isExpired) {
+        await supabase.auth.signOut();
+        if (isExpired) {
+          throw new Error('Masa sewa/langganan Anda telah habis. Silakan hubungi Superadmin.');
+        } else {
+          throw new Error('Akun Anda belum diverifikasi oleh Superadmin.');
+        }
+      }
+
+      // 4. Lolos Verifikasi -> Ke Dashboard
       router.push('/dashboard');
       router.refresh();
     } catch (err) {

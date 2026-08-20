@@ -21,7 +21,8 @@ export default function RegisterPage() {
     setErrorMsg(null);
 
     try {
-      const { data, error } = await supabase.auth.signUp({
+      // 1. Buat User Auth di Supabase
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -32,12 +33,31 @@ export default function RegisterPage() {
         },
       });
 
-      if (error) throw error;
+      if (authError) throw authError;
 
-      alert('Registrasi berhasil! Silakan login.');
+      // 2. Gunakan Upsert dengan onConflict ID agar tidak bentrok dengan Trigger DB
+      if (authData?.user) {
+        const { error: profileError } = await supabase.from('profiles').upsert(
+          {
+            id: authData.user.id,
+            email: email,
+            business_name: businessName,
+            role: 'tenant',
+            status: 'pending',
+          },
+          { onConflict: 'id' }
+        );
+
+        if (profileError) {
+          console.error('Profile Update Error:', profileError);
+        }
+      }
+
+      alert('Registrasi berhasil! Akun kamu sedang menunggu verifikasi dari Superadmin.');
       router.push('/login');
     } catch (err) {
-      setErrorMsg(err.message);
+      console.error('Register Catch Error:', err);
+      setErrorMsg(err.message || 'Gagal mendaftar. Pastikan koneksi internet stabil.');
     } finally {
       setLoading(false);
     }
