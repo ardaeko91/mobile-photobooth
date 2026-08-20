@@ -322,6 +322,16 @@ export default function AdminPage() {
           </div>
         </div>
 
+        {/* Tombol Panduan Admin */}
+        <div className="flex justify-center pt-6 border-t border-slate-800 mt-8">
+          <button
+            onClick={() => window.open('/admin/panduan', 'PanduanAdmin', 'width=600,height=750,scrollbars=yes')}
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-indigo-400 font-bold text-xs rounded-xl border border-slate-700 transition flex items-center gap-2 shadow-lg"
+          >
+            <span>📖</span> Lihat Panduan Penggunaan Admin
+          </button>
+        </div>
+
       </div>
 
       {/* Modal Set Durasi Langganan */}
@@ -364,6 +374,7 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+
     </div>
   );
 }

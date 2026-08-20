@@ -505,8 +505,17 @@ export default function PhotoboothPage({ params }) {
         )}
       </div>
 
-      {/* FOOTER WATERMARK */}
-      <footer className="text-center py-0.5 flex-shrink-0">
+      {/* FOOTER WATERMARK & TOMBOL PANDUAN TAMU */}
+      <footer className="text-center py-1 flex-shrink-0 space-y-1.5">
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={() => window.open('/panduan', 'PanduanUser', 'width=450,height=650,scrollbars=yes')}
+            className="px-3 py-1 bg-slate-800/90 hover:bg-slate-700 text-rose-400 font-bold text-[10px] rounded-full border border-slate-700 transition flex items-center gap-1 shadow-sm backdrop-blur-sm"
+          >
+            <span>❓</span> Cara Pakai Photobooth
+          </button>
+        </div>
         <p className="text-[9px] text-slate-400">
           Mobile_photobooth v1.0 | developed by{' '}
           <a

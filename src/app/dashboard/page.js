@@ -506,11 +506,22 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <footer className="text-center py-6 text-[11px] text-slate-400 font-medium">
-        Mobile_photobooth v1.0 | developed by{' '}
-        <a href="https://instagram.com/ardaeko" target="_blank" rel="noreferrer" className="text-indigo-600 font-bold hover:underline">
-          @ardaeko
-        </a>
+      {/* Footer & Tombol Panduan Tenant */}
+      <footer className="text-center py-6 text-[11px] text-slate-400 font-medium space-y-3">
+        <div className="flex justify-center">
+          <button
+            onClick={() => window.open('/admin/panduan', 'PanduanTenant', 'width=600,height=750,scrollbars=yes')}
+            className="px-4 py-2 bg-white hover:bg-slate-50 text-indigo-600 border border-slate-200 rounded-xl font-bold text-xs shadow-sm transition flex items-center gap-2"
+          >
+            <span>📖</span> Lihat Panduan Penggunaan Tenant
+          </button>
+        </div>
+        <p>
+          Mobile_photobooth v1.0 | developed by{' '}
+          <a href="https://instagram.com/ardaeko" target="_blank" rel="noreferrer" className="text-indigo-600 font-bold hover:underline">
+            @ardaeko
+          </a>
+        </p>
       </footer>
     </div>
   );
